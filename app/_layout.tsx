@@ -79,7 +79,12 @@ export default function RootLayout() {
             name='Forms/showSupply'
             options={{ title: "List of Suppliers" }}
           />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+
+          <Stack.Screen
+            name='Forms_T/purchase'
+            options={{ title: "Purchase Master" }}
+          />
+          <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
         </Stack>
       </SQLiteProvider>
     </Suspense>

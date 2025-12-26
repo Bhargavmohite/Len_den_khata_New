@@ -353,6 +353,18 @@ const SupplyMaster = () => {
                   </Picker>
                 </View>
 
+                <Text className='mb-2 text-black dark:text-white'>
+                  Edited Forms
+                </Text>
+                {/* Email */}
+                <TextInput
+                  placeholder='Email'
+                  keyboardType='email-address'
+                  className='h-14 mb-3 rounded-lg border border-[#dbe0e6] px-4 text-black dark:text-white'
+                  value={form.supplyName}
+                  onChangeText={(text) => setForm({ ...form, supplyName: text })}
+                />
+
                 {/* Mobile Number */}
                 <View className='flex-row gap-2'>
                   <TextInput
