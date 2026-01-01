@@ -54,7 +54,17 @@ export default function RootLayout() {
                 narration TEXT,
                 FOREIGN KEY (supplyId) REFERENCES Supply(id)
               );
-  `);
+`);
+          await db.execAsync(`
+              CREATE TABLE IF NOT EXISTS Sales (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                InvoiceNo INTEGER NOT NULL,
+                invoiceDate TEXT NOT NULL,
+                customerId INTEGER NOT NULL,
+                amount INTEGER NOT NULL,
+                narration TEXT,
+                FOREIGN KEY (customerId) REFERENCES Customer(id)
+              );`);
         }}
       >
         <Stack>
@@ -84,6 +94,22 @@ export default function RootLayout() {
             name='Forms_T/purchase'
             options={{ title: "Purchase Master" }}
           />
+
+          <Stack.Screen
+            name='Forms_T/sales'
+            options={{ title: "Sales Master" }}
+          />
+
+          <Stack.Screen
+            name='Forms_T/showPurchase'
+            options={{ title: "List of Purchases" }}
+          />
+
+          <Stack.Screen
+            name='Forms_T/showSales'
+            options={{ title: "List of Sales" }}
+          />
+
           <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
         </Stack>
       </SQLiteProvider>

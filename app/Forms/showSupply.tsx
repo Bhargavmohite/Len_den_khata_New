@@ -4,7 +4,7 @@ import { View } from 'react-native'
 import SupplyList from './SupplyList'
 
 const showSupply = () => {
-    const {refreshList} = useLocalSearchParams()
+    const {refreshList} = useLocalSearchParams();
     
   return (
     <View>

@@ -1,197 +1,181 @@
-import Button from "@/app-example/components/Button";
-import { MaterialIcons } from "@expo/vector-icons";
+import Button from '@/app-example/components/Button';
+import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Picker } from "@react-native-picker/picker";
-import { Link } from "expo-router";
-import { useSQLiteContext } from "expo-sqlite";
-import React, { useEffect, useState } from "react";
-import {
-  Alert,
-  Modal,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Picker } from '@react-native-picker/picker';
+import { Link } from 'expo-router';
+import { useSQLiteContext } from 'expo-sqlite';
+import React, { useEffect, useState } from 'react';
+import { Alert, Modal, Platform, Pressable, Text, TextInput, View } from 'react-native';
 
-interface Purchase {
-  id: number;
-  InvoiceNo: string;
-  invoiceDate: string;
-  supplyId: number;
-  amount: number;
-  narration?: string;
-}
 
-const purchase = () => {
-  const db = useSQLiteContext();
+const sales = () => {
+    const db = useSQLiteContext();
+    const [form, setForm] = useState({
+        invoiceNo: "",
+        invoiceDate: "",
+        customerId: null,
+        amount: "",
+        narration: "",
+      });
 
-  const [form, setForm] = useState({
-    invoiceNo: "",
-    invoiceDate: "",
-    supplyId: null as number | null,
-    amount: "",
-    narration: "",
-  });
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [customerList, setCustomerList] = useState<{ id: number; customerName: string }[]>([]);
+    const [refreshList, setRefreshList] = useState(false);
 
-  const [supplyList, setSupplyList] = useState<{ id: number; supplyName: string }[]>([]);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [refreshList, setRefreshList] = useState(false);
 
-  /* ===== MODIFY STATES ===== */
-  const [showModifyModal, setShowModifyModal] = useState(false);
-  // const [modifySupplyId, setModifySupplyId] = useState(null);
-  const [filterSupplierId, setFilterSupplierId] = useState<number | null>(null);
-  const [invoiceList, setInvoiceList] = useState<{ id: number; InvoiceNo: string }[]>([]);
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
-  const onDateChange = (_event: any, date?: Date) => {
-    setShowDatePicker(false);
-    if (date) {
-      setSelectedDate(date);
-      const formatted = date.toISOString().split("T")[0];
-      setForm({ ...form, invoiceDate: formatted });
-    }
-  };
+      /* ===== MODIFY STATES ===== */
+      const [showModifyModal, setShowModifyModal] = useState(false);
+      // const [modifycustomerId, setModifycustomerId] = useState(null);
+      const [filterCustomerId, setFilterCustomerId] = useState<number | null>(null);
+      const [invoiceList, setInvoiceList] = useState<{ id: number; InvoiceNo: string }[]>([]);
+      const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
 
-  useEffect(() => {
-    const loadSupplies = async () => {
-      try {
-        const result = await db.getAllAsync(
-          "SELECT id, supplyName FROM Supply ORDER BY supplyName"
-        );
-        setSupplyList(result);
-      } catch (error) {
-        console.error("Error loading suppliers:", error);
+    const onDateChange = (event: any, date?: Date) => {
+      setShowDatePicker(false);
+      if (date) {
+        setSelectedDate(date);
+        const formatted = date.toISOString().split("T")[0];
+        setForm({ ...form, invoiceDate: formatted });
       }
     };
-    loadSupplies();
-  }, []);
 
-  const handleSubmit = async () => {
-    if (
-      !form.invoiceNo ||
-      !form.invoiceDate ||
-      !form.supplyId ||
-      !form.amount
-    ) {
-      Alert.alert("Alert", "Please fill all required fields");
-      return;
-    }
+    const handleSubmit = async () => {
+        try {
+            if (
+                  !form.invoiceNo ||
+                  !form.invoiceDate ||
+                  !form.customerId ||
+                  !form.amount
+                ) {
+                  Alert.alert("Alert", "Please fill all required fields");
+                  return;
+                }
+            await db.runAsync(`
+                INSERT INTO Sales (InvoiceNo, invoiceDate, customerId, amount, narration)
+                VALUES (?, ?, ?, ?, ?);
+            `, [
+                form.invoiceNo,
+                form.invoiceDate,
+                form.customerId,
+                form.amount,
+                form.narration,
+            ]);
+            Alert.alert("Success", "Sales added successfully");
+            setForm({
+                invoiceNo: "",
+                invoiceDate: "",
+                customerId: null,
+                amount: "",
+                narration: "",
+            });
 
-    try {
-      await db.runAsync(
-        `INSERT INTO Purchase 
-         (InvoiceNo, invoiceDate, supplyId, amount, narration)
-         VALUES (?, ?, ?, ?, ?)`,
-        [
-          form.invoiceNo,
-          form.invoiceDate,
-          form.supplyId,
-          form.amount,
-          form.narration,
-        ]
-      );
+            setRefreshList((prev) => !prev);
+        } catch (error) {
+            console.log("SalesError :",error);
+            
+            
+        }
+    };
 
-      Alert.alert("Success", "Purchase added successfully");
 
-      setForm({
-        invoiceNo: "",
-        invoiceDate: "",
-        supplyId: null,
-        amount: "",
-        narration: "",
-      });
-      setRefreshList((prev) => !prev);
-    } catch (err) {
-      console.error("Error inserting purchase:", err);
-    }
-  };
-
-  /* ===== LOAD INVOICES BY SUPPLIER ===== */
-  const loadInvoicesBySupplier = async (supplierId: number) => {
-    setFilterSupplierId(supplierId);
-    setSelectedInvoiceId(null);
-    setInvoiceList([]);
-
-    const result = await db.getAllAsync(
-      "SELECT id, InvoiceNo FROM Purchase WHERE supplyId = ?",
-      [supplierId]
-    );
-    setInvoiceList(result);
-  };
-
-  /* ===== LOAD PURCHASE DETAILS ===== */
-  const loadPurchaseDetails = async (purchaseId: number) => {
-    setSelectedInvoiceId(purchaseId);
-
-    const result = await db.getFirstAsync<Purchase>(
-      "SELECT * FROM Purchase WHERE id = ?",
-      [purchaseId]
-    );
-
-    if (result) {
-      setForm({
-        invoiceNo: result.InvoiceNo,
-        invoiceDate: result.invoiceDate,
-        supplyId: result.supplyId,
-        amount: String(result.amount),
-        narration: result.narration || "",
-      });
-    }
-  };
-
-  /* ===== UPDATE PURCHASE ===== */
-  const handleUpdate = async () => {
-    try {
-      if (
-        !form.invoiceNo ||
-        !form.invoiceDate ||
-        !form.supplyId ||
-        !form.amount
-      ) {
-        Alert.alert("Alert", "All fields are required");
-        return;
-      }
-
-      await db.runAsync(
-        `UPDATE Purchase 
-       SET 
-         InvoiceNo = ?,
-         invoiceDate = ?,
-         supplyId = ?,
-         amount = ?,
-         narration = ?
-       WHERE id = ?`,
-        [
-          form.invoiceNo,
-          form.invoiceDate,
-          form.supplyId,
-          form.amount,
-          form.narration,
-          selectedInvoiceId,
-        ]
-      );
-
-      Alert.alert("Success", "Purchase updated successfully");
-      setShowModifyModal(false);
-
-      setForm({
-        invoiceNo: "",
-        invoiceDate: "",
-        supplyId: null,
-        amount: "",
-        narration: "",
-      });
-      setRefreshList((prev) => !prev);
-
-    } catch (error) {
-      console.log("The Error is :",error);
+      /* ===== LOAD INVOICES BY CUSTOMER ===== */
+      const loadInvoicesByCustomer = async (customerId: number) => {
+        setFilterCustomerId(customerId);
+        setSelectedInvoiceId(null);
+        setInvoiceList([]);
     
-    }
-  };
+        const result = await db.getAllAsync(
+          "SELECT id, InvoiceNo FROM Sales WHERE customerId = ?",
+          [customerId]
+        );
+        setInvoiceList(result);
+      };
 
+      /* ===== LOAD SALES DETAILS ===== */
+      const loadSalesDetails = async (SalesId: number) => {
+        setSelectedInvoiceId(SalesId);
+
+        const result = await db.getFirstAsync(
+          "SELECT * FROM Sales WHERE id = ?",
+          [SalesId]
+        ) as any;
+    
+        if (result) {
+          setForm({
+            invoiceNo: result.InvoiceNo,
+            invoiceDate: result.invoiceDate,
+            customerId: result.customerId,
+            amount: String(result.amount),
+            narration: result.narration || "",
+          });
+        }
+      };
+    
+      /* ===== UPDATE PURCHASE ===== */
+      const handleUpdate = async () => {
+        try {
+          if (
+            !form.invoiceNo ||
+            !form.invoiceDate ||
+            !form.customerId ||
+            !form.amount
+          ) {
+            Alert.alert("Alert", "All fields are required");
+            return;
+          }
+    
+          await db.runAsync(
+            `UPDATE Sales 
+           SET 
+             InvoiceNo = ?,
+             invoiceDate = ?,
+             customerId = ?,
+             amount = ?,
+             narration = ?
+           WHERE id = ?`,
+            [
+              form.invoiceNo,
+              form.invoiceDate,
+              form.customerId,
+              form.amount,
+              form.narration,
+              selectedInvoiceId,
+            ]
+          );
+    
+          Alert.alert("Success", "Purchase updated successfully");
+          setShowModifyModal(false);
+    
+          setForm({
+            invoiceNo: "",
+            invoiceDate: "",
+            customerId: null,
+            amount: "",
+            narration: "",
+          });
+            setRefreshList((prev) => !prev);
+
+        } catch (error) {
+          console.log("The Error is :",error);
+        
+        }
+      };
+
+    useEffect(() => {
+        const loadCustomers = async () => {
+          try {
+            const result = await db.getAllAsync(
+              "SELECT id, customerName FROM Customer ORDER BY customerName"
+            );
+            setCustomerList(result);
+          } catch (error) {
+            console.error("Error loading customers:", error);
+          }
+        };
+        loadCustomers();
+      }, []);
+    
   return (
     <View className='px-4 py-4'>
       {/* Form */}
@@ -222,15 +206,15 @@ const purchase = () => {
           />
         )}
 
-        <Text className='text-base font-medium mt-4 pb-2'>Supplier Name</Text>
+        <Text className='text-base font-medium mt-4 pb-2'>Customer Name</Text>
         <View className='rounded-lg border border-[#dbe0e6] dark:border-gray-600 bg-white dark:bg-gray-800 px-4 text-base text-black dark:text-white'>
           <Picker
-            selectedValue={form.supplyId}
-            onValueChange={(v) => setForm({ ...form, supplyId: v })}
+            selectedValue={form.customerId}
+            onValueChange={(v) => setForm({ ...form, customerId: v })}
           >
-            <Picker.Item label='Select Supplier' value={undefined} />
-            {supplyList.map((s) => (
-              <Picker.Item key={s.id} label={s.supplyName} value={s.id} />
+            <Picker.Item label='Select Customer' value={undefined} />
+            {customerList.map((c) => (
+              <Picker.Item key={c.id} label={c.customerName} value={c.id} />
             ))}
           </Picker>
         </View>
@@ -257,7 +241,7 @@ const purchase = () => {
         <Button title='Submit' onpress={handleSubmit} />
         <Button title='Modify' onpress={() => setShowModifyModal(true)} />
       </View>
-      {/* Modify Modal */}
+      {/* Modify */}
       <View>
         <Modal
           visible={showModifyModal}
@@ -268,22 +252,26 @@ const purchase = () => {
           <View className='flex-1 justify-center items-center bg-black/40'>
             <View className='w-[90%] rounded-xl bg-white p-5 dark:bg-gray-800'>
               <Text className='text-lg font-semibold text-black dark:text-white mb-4'>
-                Modify Purchase
+                Modify Sales
               </Text>
 
-              {/* ===== SELECT SUPPLIER (FILTER) ===== */}
+              {/* ===== SELECT CUSTOMER (FILTER) ===== */}
               <Text className='mb-2 text-black dark:text-white'>
-                Supplier Name
+                Customer Name
               </Text>
 
               <View className='h-14 mb-3 justify-center rounded-lg border border-[#dbe0e6] dark:border-gray-600'>
                 <Picker
-                  selectedValue={filterSupplierId}
-                  onValueChange={loadInvoicesBySupplier}
+                  selectedValue={filterCustomerId}
+                  onValueChange={loadInvoicesByCustomer}
                 >
-                  <Picker.Item label='Select Supplier' value={null} />
-                  {supplyList.map((s) => (
-                    <Picker.Item key={s.id} label={s.supplyName} value={s.id} />
+                  <Picker.Item label='Select Customer' value={null} />
+                  {customerList.map((c) => (
+                    <Picker.Item
+                      key={c.id}
+                      label={c.customerName}
+                      value={c.id}
+                    />
                   ))}
                 </Picker>
               </View>
@@ -298,7 +286,7 @@ const purchase = () => {
                   <View className='h-14 mb-3 justify-center rounded-lg border border-[#dbe0e6] dark:border-gray-600'>
                     <Picker
                       selectedValue={selectedInvoiceId}
-                      onValueChange={loadPurchaseDetails}
+                      onValueChange={loadSalesDetails}
                     >
                       <Picker.Item label='Select Invoice' value={null} />
                       {invoiceList.map((i) => (
@@ -319,6 +307,7 @@ const purchase = () => {
                   <Text className='text-lg font-semibold text-black dark:text-white mb-4'>
                     Edited Form
                   </Text>
+
                   <TextInput
                     placeholder='Invoice Number'
                     className='h-14 mb-3 rounded-lg border border-[#dbe0e6] px-4 text-black dark:text-white'
@@ -337,14 +326,14 @@ const purchase = () => {
 
                   <View className='h-14 mb-3 justify-center rounded-lg border border-[#dbe0e6]'>
                     <Picker
-                      selectedValue={form.supplyId}
-                      onValueChange={(v) => setForm({ ...form, supplyId: v })}
+                      selectedValue={form.customerId}
+                      onValueChange={(v) => setForm({ ...form, customerId: v })}
                     >
-                      {supplyList.map((s) => (
+                      {customerList.map((c) => (
                         <Picker.Item
-                          key={s.id}
-                          label={s.supplyName}
-                          value={s.id}
+                          key={c.id}
+                          label={c.customerName}
+                          value={c.id}
                         />
                       ))}
                     </Picker>
@@ -379,21 +368,20 @@ const purchase = () => {
           </View>
         </Modal>
       </View>
-      {/* Show Purchase */}
       <View className='flex items-center bg-white dark:bg-gray-800/50 rounded-xl p-4 w-[85%] relative left-8 top-[1px]'>
         <Link
-                  href={{
-                    pathname: "/Forms_T/showPurchase",
-                    params: {
-                      refresh: refreshList ? "1" : "0",
-                    },
-                  }}
-                  asChild
-                >
-                  <Text className='text-base font-medium'>Show Supplier</Text>
-                </Link>
+          href={{
+            pathname: "/Forms_T/showSales",
+            params: {
+              refresh: refreshList ? "1" : "0",
+            },
+          }}
+        >
+          <Text className='text-base font-medium'>Show Customer</Text>
+        </Link>
       </View>
     </View>
   );
-};;;
-export default purchase;
+}
+
+export default sales
