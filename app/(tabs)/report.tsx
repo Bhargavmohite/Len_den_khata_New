@@ -1,10 +1,10 @@
-import { View, Text } from 'react-native'
 import React from 'react'
+import { Text, View } from 'react-native'
 
 const report = () => {
   return (
-    <View>
-      <Text>report Icon</Text>
+    <View className='flex-1 items-center justify-center'>
+      <Text>Updates Coming soon</Text>
     </View>
   )
 }

@@ -110,6 +110,16 @@ export default function RootLayout() {
             options={{ title: "List of Sales" }}
           />
 
+          <Stack.Screen
+            name='login_Signup/login'
+            options={{ title: "Login" , headerTitleAlign: "center",}}
+          />
+
+          <Stack.Screen
+            name='login_Signup/signup'
+            options={{ title: "Signup", headerTitleAlign: "center" }}
+          />
+
           <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
         </Stack>
       </SQLiteProvider>
