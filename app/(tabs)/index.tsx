@@ -1,10 +1,39 @@
 import { AntDesign, FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { useSQLiteContext } from 'expo-sqlite';
+import React, { use, useEffect } from 'react';
+import { Alert, Pressable, Text, View } from 'react-native';
 
 const index = () => {
   const router = useRouter();
+
+  const db = useSQLiteContext();
+  const checkTrialStatus = async () => {
+    try {
+      const result = await db.getFirstAsync<{
+        endDate: string;
+      }>("SELECT endDate FROM Signup ORDER BY id DESC LIMIT 1");
+
+      if (!result?.endDate) return;
+
+      const today = new Date().toISOString().split("T")[0];
+
+      if (today > result.endDate) {
+        Alert.alert(
+          "Trial Expired",
+          "Your free trial has ended. Please sign in to continue.",
+        );
+
+        router.replace("/login_Signup/signup");
+      }
+    } catch (error) {
+      console.log("Trial Check Error:", error);
+    }
+  };
+
+  useEffect(() => {
+    checkTrialStatus();
+  },[])
 
   const customer = () => {
     router.push("../Forms/Customer_master");
@@ -87,6 +116,7 @@ const index = () => {
       {/* <Link href={''} asChild>
         <Button title='Customer Master' />
       </Link> */}
+      
     </View>
   );
 }

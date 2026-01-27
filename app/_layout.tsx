@@ -9,11 +9,12 @@ export default function RootLayout() {
       <SQLiteProvider
         databaseName='len_den_khata.db'
         onInit={async (db) => {
-          // 1️⃣ Enable FK first
-          await db.execAsync("PRAGMA foreign_keys = ON");
+          try {
+            // 1️⃣ Enable FK first
+            await db.execAsync("PRAGMA foreign_keys = ON");
 
-          // 2️⃣ Create tables ONLY
-          await db.execAsync(`
+            // 2️⃣ Create tables ONLY
+            await db.execAsync(`
               CREATE TABLE IF NOT EXISTS Customer (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 customerName TEXT NOT NULL,
@@ -25,7 +26,7 @@ export default function RootLayout() {
               );
             `);
 
-          await db.execAsync(`
+            await db.execAsync(`
               CREATE TABLE IF NOT EXISTS Supply (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 supplyName TEXT NOT NULL,
@@ -37,14 +38,14 @@ export default function RootLayout() {
               );
             `);
 
-          await db.execAsync(`
+            await db.execAsync(`
               CREATE TABLE IF NOT EXISTS Bank (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 bankName TEXT NOT NULL
               );
             `);
 
-          await db.execAsync(`
+            await db.execAsync(`
               CREATE TABLE IF NOT EXISTS Purchase (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 InvoiceNo INTEGER NOT NULL,
@@ -54,8 +55,9 @@ export default function RootLayout() {
                 narration TEXT,
                 FOREIGN KEY (supplyId) REFERENCES Supply(id)
               );
-`);
-          await db.execAsync(`
+          `);
+
+            await db.execAsync(`
               CREATE TABLE IF NOT EXISTS Sales (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 InvoiceNo INTEGER NOT NULL,
@@ -65,6 +67,22 @@ export default function RootLayout() {
                 narration TEXT,
                 FOREIGN KEY (customerId) REFERENCES Customer(id)
               );`);
+
+            // await db.execAsync(`DROP TABLE IF EXISTS Signup;`);
+
+            await db.execAsync(`
+              CREATE TABLE IF NOT EXISTS Signup (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Shopname TEXT NOT NULL,
+                Fullname TEXT NOT NULL,
+                Email TEXT NOT NULL,
+                mobileNumber TEXT NOT NULL,
+                startDate TEXT,
+                endDate TEXT
+              );`);
+          } catch (err) {
+            console.error("SQLite init Error:", err);
+          }
         }}
       >
         <Stack>
@@ -112,7 +130,7 @@ export default function RootLayout() {
 
           <Stack.Screen
             name='login_Signup/login'
-            options={{ title: "Login" , headerTitleAlign: "center",}}
+            options={{ title: "Login", headerTitleAlign: "center" }}
           />
 
           <Stack.Screen
