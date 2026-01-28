@@ -78,7 +78,8 @@ export default function RootLayout() {
                 Email TEXT NOT NULL,
                 mobileNumber TEXT NOT NULL,
                 startDate TEXT,
-                endDate TEXT
+                endDate TEXT,
+                receiptNumber TEXT
               );`);
           } catch (err) {
             console.error("SQLite init Error:", err);

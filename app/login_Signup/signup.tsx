@@ -15,10 +15,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const signup = () => {
   const router = useRouter();
 
-  const SERVICE_ID = process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID!;
-  const TEMPLATE_ID = process.env.EXPO_PUBLIC_EMAILJS_TEMPLATE_ID!;
-  // const PRIVATE_KEY = process.env.EXPO_PUBLIC_EMAILJS_PRIVATE_KEY!;
-  const PUBLIC_KEY = process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY!;
+  const SERVICE_ID = process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID ?? "";
+  const TEMPLATE_ID = process.env.EXPO_PUBLIC_EMAILJS_TEMPLATE_ID ?? "";
+  const PUBLIC_KEY = process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY ?? "";
 
   const db = useSQLiteContext();
   const [formData, setFormData] = useState({
@@ -28,6 +27,7 @@ const signup = () => {
     mobileNumber: "",
     startDate: "",
     endDate: "",
+    recepitNumber: "",
   });
 
   const generateDate = () => {
@@ -40,7 +40,11 @@ const signup = () => {
     };
   };
 
-  const handleSubmit = async () => {
+  const generateReceipt = (fullname, mobile) => {
+    return fullname.slice(0, 4).toUpperCase() + mobile.slice(-4);
+  };
+
+  const handletrail = async () => {
     if (
       !formData.Shopname ||
       !formData.Fullname ||
@@ -54,8 +58,13 @@ const signup = () => {
     try {
       const { startDate, endDate } = generateDate();
 
+      const randomReceipt = generateReceipt(
+        formData.Fullname,
+        formData.mobileNumber,
+      );
+
       await db.runAsync(
-        `INSERT INTO Signup (Shopname, Fullname, Email, mobileNumber, startDate, endDate) VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO Signup (Shopname, Fullname, Email, mobileNumber, startDate, endDate, receiptNumber) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           formData.Shopname,
           formData.Fullname,
@@ -63,19 +72,28 @@ const signup = () => {
           formData.mobileNumber,
           startDate,
           endDate,
+          randomReceipt,
         ],
       );
+      // console.log("Sending to :"+ formData.Email);
+      console.log("receipt_Number: " + randomReceipt);
 
       await emailjs.send(
         SERVICE_ID,
         TEMPLATE_ID,
         {
-          to_email: formData.Email,
+          email: formData.Email,
           name: formData.Fullname,
-          trial_end: endDate,
+          start_date: startDate, // or startDate variable
+          end_date: endDate, // calculated end date
+          mob_num: formData.mobileNumber,
+          receipt_num: randomReceipt,
+          company_name: "Tech Solutions mobile",
+          support_email: "support.tsm@gmail.com",
         },
-        "6DlP7IsrKHnuIwAp2",
+        PUBLIC_KEY,
       );
+      // console.log("Sending to :" + formData.Email);
 
       alert(`5 Day Free Trial Started!\nTrial ends on ${endDate}`);
       router.replace("/(tabs)");
@@ -87,11 +105,16 @@ const signup = () => {
         mobileNumber: "",
         startDate: "",
         endDate: "",
+        recepitNumber: "",
       });
     } catch (error: any) {
       console.error("Signup error:", error);
       alert(error.message || "Something went wrong");
     }
+  };
+
+  const handlepayment = () => {
+    alert("Payment Gateway is under development");
   };
 
   return (
@@ -172,14 +195,17 @@ const signup = () => {
           />
 
           {/* Submit Button */}
-          <TouchableOpacity className='bg-primary h-14 rounded-2xl items-center justify-center'>
-            <Text className='text-white text-lg font-bold'>Submit</Text>
+          <TouchableOpacity
+            className='bg-primary h-14 rounded-2xl items-center justify-center'
+            onPress={handlepayment}
+          >
+            <Text className='text-white text-lg font-bold'>Buy Now</Text>
           </TouchableOpacity>
 
           {/* Free Trail Button */}
           <TouchableOpacity
             className='bg-primary h-14 rounded-2xl mt-4 items-center justify-center'
-            onPress={handleSubmit}
+            onPress={handletrail}
           >
             <Text className='text-base font-medium text-white'>
               Start with Free Trial
