@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { Link, router } from "expo-router";
 import { useSQLiteContext } from "expo-sqlite";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -12,6 +12,41 @@ const login = () => {
     mobileNumber: "",
     receiptNumber: "",
   });
+
+    const checkTrialStatus = async () => {
+      try {
+        // 1. Get latest signup row
+        const result = await db.getFirstAsync<{
+          id: number;
+          endDate: string;
+        }>("SELECT id, endDate FROM Signup ORDER BY id DESC LIMIT 1");
+
+        if (!result) return;
+
+        // 2. Get today's date (YYYY-MM-DD)
+        const today = new Date().toISOString().split("T")[0];
+
+        // 3. Check if trial expired
+        if (today > result.endDate) {
+          // 4. Delete expired trial row
+          await db.runAsync("DELETE FROM Signup WHERE id = ?", [result.id]);
+
+          // 5. Alert + redirect
+          Alert.alert(
+            "Trial Expired",
+            "Your free trial has ended. Please sign up again.",
+          );
+
+          router.replace("/login_Signup/signup");
+        }
+      } catch (error) {
+        console.log("Trial Check Error:", error);
+      }
+    };
+
+    useEffect(() => {
+      checkTrialStatus();
+    }, []);
 
   const handlelogin = async () => {
     if (!formData.mobileNumber || !formData.receiptNumber) {
@@ -63,7 +98,7 @@ const login = () => {
 
         {/* Mobile Number */}
         <View className='mb-4'>
-          <Text className='text-sm font-semibold text-[#0d121b] mb-2 ml-1'>
+          <Text className='text-[22px] font-semibold text-[#0d121b] mb-2 ml-1'>
             Mobile Number
           </Text>
 
@@ -86,7 +121,7 @@ const login = () => {
 
         {/* Receipt Number */}
         <View className='mb-6'>
-          <Text className='text-sm font-semibold text-[#0d121b] mb-2 ml-1'>
+          <Text className='text-[22px] font-semibold text-[#0d121b] mb-2 ml-1'>
             Receipt Number
           </Text>
 
@@ -107,14 +142,13 @@ const login = () => {
         </View>
 
         {/* Login Button */}
-        
-          <TouchableOpacity
-            className='h-14 w-full bg-[#1A5DFF] rounded-2xl items-center justify-center shadow-md active:scale-95 m-2'
-            onPress={handlelogin}
-          >
-            <Text className='text-white text-base font-bold'>Login</Text>
-          </TouchableOpacity>
-        
+
+        <TouchableOpacity
+          className='h-14 w-full bg-[#1A5DFF] rounded-2xl items-center justify-center shadow-md active:scale-95 m-2'
+          onPress={handlelogin}
+        >
+          <Text className='text-white text-base font-bold'>Login</Text>
+        </TouchableOpacity>
 
         {/* Links */}
         <View className='items-center pt-8 gap-4'>
@@ -128,17 +162,18 @@ const login = () => {
             </Text>
           </TouchableOpacity>
 
-          <View className='flex-row items-center gap-2 mt-2'>
-            <MaterialIcons name='verified-user' size={14} color='#1A5DFF' />
+          <View className='flex-row items-center gap-2 '>
+            <MaterialIcons name='verified-user' size={14} color='#0fa34f' />
             <Text className='text-xs text-gray-400'>
               End-to-end encrypted ledger data
             </Text>
           </View>
         </View>
       </View>
+      {/* <br /> */}
 
       {/* Footer */}
-      <View className='p-6 items-center'>
+      <View className='p-6 items-center  relative top-5'>
         <Text className='text-sm text-gray-400 '>
           Don’t have an account?{" "}
           <Text className='text-[#1A5DFF] font-semibold'>
